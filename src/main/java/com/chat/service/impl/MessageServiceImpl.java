@@ -35,17 +35,14 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public void markAsRead(Long messageId) {
-        Message message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
-        message.setRead(true);
-        messageRepository.save(message);
+        Message m = messageRepository.findById(messageId)
+            .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        m.setRead(true);
+        messageRepository.save(m);
     }
 
     @Override
     public List<Message> getAllMessagesFor(Long userId) {
         return messageRepository.findByReceiverIdOrderByTimestampDesc(userId);
     }
-
-
-
 }

@@ -3,7 +3,6 @@ package com.chat.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.List;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -30,8 +29,10 @@ public class User {
     @JsonIgnore
     private String password;
 
+    @Builder.Default
     private String role = "USER"; // USER or ADMIN
 
+    @Builder.Default
     private boolean enabled = true;
 
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
