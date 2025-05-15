@@ -28,6 +28,24 @@ public class MessageServiceImpl implements MessageService {
         return messageRepository.findMessagesBetweenUsers(senderId, receiverId);
     }
 
+    @Override
+    public List<Message> getUnreadMessagesFor(Long userId) {
+        return messageRepository.findByReceiverIdAndIsReadFalseOrderByTimestampDesc(userId);
+    }
+
+    @Override
+    public void markAsRead(Long messageId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        message.setRead(true);
+        messageRepository.save(message);
+    }
+
+    @Override
+    public List<Message> getAllMessagesFor(Long userId) {
+        return messageRepository.findByReceiverIdOrderByTimestampDesc(userId);
+    }
+
 
 
 }

@@ -25,5 +25,21 @@ public class MessageController {
     public List<Message> getMessagesBetweenUsers(@RequestParam Long senderId, @RequestParam Long receiverId){
         return messageService.getMessagesBetweenUsers(senderId, receiverId);
     }
+    
+    @GetMapping("/unread")
+    public List<Message> getUnreadForUser(@RequestParam Long userId) {
+        return messageService.getUnreadMessagesFor(userId);
+    }
+    
+    @PutMapping("/{id}/read")
+    public void markAsRead(@PathVariable Long id) { messageService.markAsRead(id); }
+
+    @GetMapping("/all")
+    public List<Message> getAllForUser(@RequestParam Long userId) {
+        return messageService.getAllMessagesFor(userId);
+    }
+
+
 }
+
 
