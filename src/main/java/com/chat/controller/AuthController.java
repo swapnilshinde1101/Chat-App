@@ -2,11 +2,19 @@ package com.chat.controller;
 
 import com.chat.security.JwtUtil;
 import com.chat.security.CustomUserDetailsService;
+import com.chat.dto.RegisterRequest;
+import com.chat.entity.User;
+import com.chat.repository.UserRepository;
 import com.chat.request.LoginRequest;
 import com.chat.response.LoginResponse;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -15,20 +23,63 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;      // ← new
+    private final UserRepository userRepository;        // ← new
 
-    public AuthController(AuthenticationManager authManager, CustomUserDetailsService uds, JwtUtil jwtUtil) {
+    public AuthController(AuthenticationManager authManager,
+                          CustomUserDetailsService uds,
+                          JwtUtil jwtUtil,
+                          PasswordEncoder passwordEncoder,
+                          UserRepository userRepository) {
         this.authenticationManager = authManager;
         this.userDetailsService = uds;
         this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
+        this.userRepository = userRepository;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
+        if (userRepository.existsByEmail(req.getEmail())) {
+            return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body("Email already in use");
+        }
+
+        User user = new User();
+        user.setName(req.getName().trim());
+        user.setEmail(req.getEmail().toLowerCase());
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        // set any default roles/flags on user…
+
+        userRepository.save(user);
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body("User registered successfully");
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest request) {
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
-        final String token = jwtUtil.generateToken(userDetails.getUsername());
-        return new LoginResponse("Login successful", token);
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    request.getEmail(), 
+                    request.getPassword()
+                )
+            );
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
+        } catch (DisabledException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User account is disabled");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");
+        }
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+        String token = jwtUtil.generateToken(userDetails.getUsername());
+        return ResponseEntity.ok(new LoginResponse("Login successful", token));
+        
     }
+
 }
