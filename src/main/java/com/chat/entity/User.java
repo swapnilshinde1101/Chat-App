@@ -32,6 +32,7 @@ public class User {
     @Builder.Default
     private String role = "USER"; // USER or ADMIN
 
+    @Column(name = "enabled")
     @Builder.Default
     private boolean enabled = true;
 
