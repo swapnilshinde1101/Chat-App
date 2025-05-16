@@ -10,7 +10,8 @@ public interface UserService {
 
     User getUserById(Long id);
 
-    List<User> getAllUsers();
+
+    public List<User> getAllUsers();
 
     User findByEmail(String email);
 }

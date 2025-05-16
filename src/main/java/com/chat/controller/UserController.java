@@ -1,6 +1,7 @@
 package com.chat.controller;
 
 import com.chat.dto.UserDTO;
+import java.util.stream.Collectors;
 import com.chat.entity.User;
 import com.chat.service.UserService;
 
@@ -34,7 +35,7 @@ public class UserController {
 
         UserDTO dto = UserDTO.builder()
             .id(user.getId())
-            .name(user.getName())
+            .name(user.getUsername())
             .email(user.getEmail())
             .role(user.getRole())
             .enabled(user.isEnabled())
@@ -52,7 +53,7 @@ public class UserController {
         }
         UserDTO dto = UserDTO.builder()
             .id(user.getId())
-            .name(user.getName())
+            .name(user.getUsername())
             .email(user.getEmail())
             .role(user.getRole())
             .enabled(user.isEnabled())
@@ -60,16 +61,16 @@ public class UserController {
         return ResponseEntity.ok(dto);
     }
 
-    // List all users
     @GetMapping
     public List<UserDTO> getAllUsers(){
         return userService.getAllUsers().stream().map(user -> UserDTO.builder()
             .id(user.getId())
-            .name(user.getName())
+            .name(user.getUsername())
             .email(user.getEmail())
             .role(user.getRole())
             .enabled(user.isEnabled())
             .build()
-        ).toList();
+        ).collect(Collectors.toList());
     }
+
 }

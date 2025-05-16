@@ -1,12 +1,17 @@
 package com.chat.controller;
 
 import com.chat.security.JwtUtil;
+
+import jakarta.validation.Valid;
+
 import com.chat.security.CustomUserDetailsService;
 import com.chat.dto.RegisterRequest;
 import com.chat.entity.User;
 import com.chat.repository.UserRepository;
 import com.chat.request.LoginRequest;
 import com.chat.response.LoginResponse;
+
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,47 +44,58 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
-        if (userRepository.existsByEmail(req.getEmail())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body("{\"error\":\"Email already in use\"}");
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
+
+        // Check if password and confirm password match
+        if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
+            return ResponseEntity.badRequest().body("Passwords do not match");
         }
 
+        // Check if user/email already exists
+        if (userRepository.existsByUsername(registerRequest.getUsername())) {
+            return ResponseEntity.badRequest().body("Username is already taken");
+        }
+
+        if (userRepository.existsByEmail(registerRequest.getEmail())) {
+            return ResponseEntity.badRequest().body("Email is already registered");
+        }
+
+        // Create new user
         User user = new User();
-        user.setName(req.getName().trim());
-        user.setEmail(req.getEmail().toLowerCase());
-        user.setPassword(passwordEncoder.encode(req.getPassword()));
-        user.setRole("USER"); // default user role
-        user.setEnabled(true);
+        user.setUsername(registerRequest.getUsername());
+        user.setEmail(registerRequest.getEmail());
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+
+        // Set role as String "USER"
+        user.setRole("USER");
 
         userRepository.save(user);
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body("{\"message\":\"User registered successfully\"}");
+        return ResponseEntity.ok("User registered successfully");
     }
+
+
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                    request.getEmail(), 
+                    request.getUsername(),   // changed from email to username
                     request.getPassword()
                 )
             );
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("{\"error\":\"Invalid email or password\"}");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid username or password"));
         } catch (DisabledException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("{\"error\":\"User account is disabled\"}");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "User account is disabled"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("{\"error\":\"An internal error occurred\"}");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An internal error occurred"));
         }
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
         String token = jwtUtil.generateToken(userDetails.getUsername());
         return ResponseEntity.ok(new LoginResponse("Login successful", token));
     }
+
 }

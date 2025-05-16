@@ -19,8 +19,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     @NotBlank(message = "Name is mandatory")
-    private String name;
+    private String username;
 
     @Column(unique = true, nullable = false)
     @Email(message = "Email should be valid")
@@ -32,7 +33,7 @@ public class User {
     private String password;
 
     @Builder.Default
-    private String role = "USER"; // USER or ADMIN
+    private String role = "USER";
 
     @Builder.Default
     private boolean enabled = true;

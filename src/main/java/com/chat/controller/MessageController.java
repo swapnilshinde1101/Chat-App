@@ -1,6 +1,8 @@
 package com.chat.controller;
 
 import com.chat.dto.MessageDTO;
+import com.chat.entity.User;
+
 import com.chat.entity.Message;
 import com.chat.entity.User;
 import com.chat.service.MessageService;
@@ -122,9 +124,9 @@ public class MessageController {
                 .isRead(m.isRead())
                 .timestamp(m.getTimestamp())
                 .senderId(m.getSender().getId())
-                .senderName(m.getSender().getName())
+                .senderName(m.getSender().getUsername())
                 .receiverId(m.getReceiver().getId())
-                .receiverName(m.getReceiver().getName())
+                .receiverName(m.getReceiver().getUsername())
                 .build();
     }
 
