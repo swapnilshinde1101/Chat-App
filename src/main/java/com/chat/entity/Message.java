@@ -42,4 +42,7 @@ public class Message {
             this.timestamp = LocalDateTime.now();
         }
     }
+
+	
+    
 }
