@@ -1,8 +1,7 @@
-// api.js
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'http://localhost:8080/api', // Make sure this matches your backend port
   headers: {
     'Content-Type': 'application/json'
   }
@@ -10,42 +9,70 @@ const API = axios.create({
 
 // Request interceptor for auth token
 API.interceptors.request.use(config => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  if (user?.token) {
-    config.headers.Authorization = `Bearer ${user.token}`;
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Enhanced API methods with error handling
+// Response interceptor
+API.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const auth = {
   login: (username, password) => 
     API.post('/auth/login', { username, password })
-      .then(res => res.data)
+      .then(res => {
+        localStorage.setItem('token', res.data.token);
+        return res.data;
+      })
       .catch(err => {
-        throw new Error(err.response?.data?.message || 'Login failed');
+        throw new Error(err.response?.data?.error || 'Login failed');
       }),
 
   signup: (userData) => 
-    API.post('/auth/signup', userData)
-      .then(res => res.data)
-      .catch(err => {
-        throw new Error(err.response?.data?.message || 'Registration failed');
-      })
+    API.post('/auth/register', {  // Changed from /signup to /register
+      username: userData.username,
+      email: userData.email,
+      password: userData.password,
+      confirmPassword: userData.confirmPassword
+    })
+    .then(res => res.data)
+    .catch(err => {
+      throw new Error(err.response?.data || 'Registration failed');
+    })
+};
+
+export const users = {
+  getCurrentUser: () => API.get('/users/me'),
+  getUserById: (id) => API.get(`/users/${id}`),
+  getAllUsers: () => API.get('/users')
 };
 
 export const messages = {
-  getMessages: (userId) => 
-    API.get(`/messages/${userId}`)
-      .then(res => res.data)
-      .catch(err => {
-        throw new Error('Failed to load messages');
-      }),
+  sendMessage: (receiverId, content) => 
+    API.post('/messages', { receiverId, content }),
+  
+  getMessagesBetween: (otherUserId) => 
+    API.get('/messages/between', { params: { otherUserId } }),
+  
+  getUnreadMessages: () => API.get('/messages/unread'),
+  
+  markAsRead: (messageId) => 
+    API.put(`/messages/${messageId}/read`),
+  
+  getAllMessages: () => API.get('/messages/all')
+};
 
-  sendMessage: (userId, text) => 
-    API.post(`/messages/${userId}`, { text })
-      .then(res => res.data)
-      .catch(err => {
-        throw new Error('Failed to send message');
-      })
+export const chats = {
+  getUserChats: () => API.get('/messages/all') // Using messages endpoint since no dedicated chats endpoint
 };

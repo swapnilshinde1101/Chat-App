@@ -133,3 +133,23 @@ button {
   background: #e9ecef;
   margin-right: auto;
 }
+
+/* Add these to your CSS */
+.message.sent {
+  background: #007bff;
+  color: white;
+  margin-left: auto;
+  max-width: 70%;
+}
+
+.message.received {
+  background: #e9ecef;
+  margin-right: auto;
+  max-width: 70%;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}

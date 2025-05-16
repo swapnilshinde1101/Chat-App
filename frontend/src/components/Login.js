@@ -1,13 +1,9 @@
-// components/Login.js
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    username: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -15,19 +11,21 @@ const Login = () => {
 
   useEffect(() => {
     const newErrors = {};
-    if (!formData.username) newErrors.username = 'Username is required';
-    if (!formData.password) newErrors.password = 'Password is required';
+    if (!formData.username.trim()) newErrors.username = 'Username required';
+    if (!formData.password) newErrors.password = 'Password required';
     setErrors(newErrors);
   }, [formData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (Object.keys(errors).length > 0) return;
+
     setLoading(true);
     try {
       await login(formData.username, formData.password);
       navigate('/inbox');
     } catch (error) {
-      setErrors({ general: 'Invalid username or password' });
+      setErrors({ general: 'Invalid credentials' });
     } finally {
       setLoading(false);
     }
@@ -58,8 +56,8 @@ const Login = () => {
           />
           {errors.password && <span className="error-text">{errors.password}</span>}
         </div>
-        <button type="submit" disabled={Object.keys(errors).length > 0 || loading}>
-          {loading ? 'Loading...' : 'Log In'}
+        <button type="submit" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
       <p>
@@ -68,3 +66,5 @@ const Login = () => {
     </div>
   );
 };
+
+export default Login;

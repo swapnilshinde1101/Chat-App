@@ -34,3 +34,5 @@ function ChatWindow() {
     </div>
   );
 }
+
+export default ChatWindow;

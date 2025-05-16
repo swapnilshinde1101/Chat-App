@@ -23,9 +23,22 @@ function App() {
   );
 }
 
+// Update PrivateRoute component
 const PrivateRoute = ({ children }) => {
   const { currentUser } = useAuth();
-  return currentUser ? children : <Navigate to="/login" />;
+  const [verified, setVerified] = useState(false);
+
+  useEffect(() => {
+    const verifyToken = async () => {
+      if (currentUser?.token) {
+        const isValid = await verifyToken(currentUser.token);
+        setVerified(isValid);
+      }
+    };
+    verifyToken();
+  }, [currentUser]);
+
+  return verified ? children : <Navigate to="/login" />;
 };
 
 export default App;

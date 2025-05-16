@@ -32,6 +32,25 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
   };
 
+  // Add token refresh logic
+useEffect(() => {
+  const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const res = await axios.get('/auth/refresh', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        localStorage.setItem('token', res.data.newToken);
+      } catch (err) {
+        localStorage.removeItem('token');
+      }
+    }
+    setLoading(false);
+  };
+  checkAuth();
+}, []);
+
   return (
     <AuthContext.Provider value={{ currentUser, login, signup, logout }}>
       {!loading && children}

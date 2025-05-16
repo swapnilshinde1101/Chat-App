@@ -16,7 +16,7 @@ const Inbox = () => {
     const fetchChats = async () => {
       try {
         setLoading(true);
-        const response = await chats.getUserChats(currentUser.id);
+        const response = await messages.getAllMessages();
         setChatList(response.data);
       } catch (error) {
         setError('Failed to load chats');
@@ -28,16 +28,6 @@ const Inbox = () => {
     
     if(currentUser) fetchChats();
   }, [currentUser]);
-
-  const handleChatSelect = (user) => {
-    setSelectedUser(user);
-    // Mark as read when selecting chat
-    setChatList(prev => prev.map(chat => 
-      chat.user.id === user.id 
-        ? { ...chat, unreadCount: 0 } 
-        : chat
-    ));
-  };
 
   const filteredChats = chatList.filter(chat => {
     const matchesSearch = chat.user.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -53,60 +43,35 @@ const Inbox = () => {
       <div className="sidebar">
         <div className="header">
           <h3>Chats</h3>
-          <div className="controls">
-            <select 
-              value={viewMode} 
-              onChange={(e) => setViewMode(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">All Chats</option>
-              <option value="unread">Unread ({chatList.filter(c => c.unreadCount > 0).length})</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
-          </div>
+          <select value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
+            <option value="all">All Chats</option>
+            <option value="unread">Unread</option>
+          </select>
         </div>
-        
+        <input
+          type="text"
+          placeholder="Search..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
         <div className="chat-list">
-          {filteredChats.length > 0 ? (
-            filteredChats.map(chat => (
-              <div
-                key={chat.user.id}
-                className={`chat-item ${chat.unreadCount > 0 ? 'unread' : ''}`}
-                onClick={() => handleChatSelect(chat.user)}
-              >
-                <div className="chat-info">
-                  <span className="username">{chat.user.name}</span>
-                  {chat.lastMessage && (
-                    <span className="preview">{chat.lastMessage}</span>
-                  )}
-                </div>
-                {chat.unreadCount > 0 && (
-                  <span className="unread-badge">{chat.unreadCount}</span>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="empty">No chats found</div>
-          )}
+          {filteredChats.map(chat => (
+            <div
+              key={chat.user.id}
+              className={`chat-item ${chat.unreadCount > 0 ? 'unread' : ''}`}
+              onClick={() => setSelectedUser(chat.user)}
+            >
+              <span>{chat.user.name}</span>
+              {chat.unreadCount > 0 && <span className="unread-badge">{chat.unreadCount}</span>}
+            </div>
+          ))}
         </div>
       </div>
-      
       <div className="conversation-panel">
         {selectedUser ? (
-          <Conversation 
-            user={selectedUser} 
-            onBack={() => setSelectedUser(null)}
-          />
+          <Conversation user={selectedUser} />
         ) : (
-          <div className="empty-state">
-            Select a chat from the list to view messages
-          </div>
+          <div className="empty-state">Select a chat to view messages</div>
         )}
       </div>
     </div>

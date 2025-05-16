@@ -1,4 +1,3 @@
-// components/Conversation.js
 import { useState, useEffect } from 'react';
 import { messages } from '../api';
 
@@ -12,7 +11,7 @@ const Conversation = ({ user }) => {
     const loadMessageHistory = async () => {
       try {
         setLoading(true);
-        const response = await messages.getMessages(user.id);
+       const response = await messages.getMessagesBetween(user.id);
         setMessageList(response.data);
       } catch (error) {
         setError('Failed to load message history');
@@ -41,15 +40,25 @@ const Conversation = ({ user }) => {
 
   return (
     <div className="conversation-container">
-      {/* Message list rendering */}
+      <div className="messages">
+        {messageList.map(msg => (
+          <div key={msg.id} className={`message ${msg.sender === 'me' ? 'sent' : 'received'}`}>
+            <p>{msg.text}</p>
+            <span>{new Date(msg.timestamp).toLocaleTimeString()}</span>
+          </div>
+        ))}
+      </div>
       <div className="message-input">
         <input
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+          placeholder="Type a message..."
         />
         <button onClick={handleSend}>Send</button>
       </div>
     </div>
   );
 };
+
+export default Conversation;
