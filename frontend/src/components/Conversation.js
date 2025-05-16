@@ -1,66 +1,55 @@
+// components/Conversation.js
 import { useState, useEffect } from 'react';
 import { messages } from '../api';
 
 const Conversation = ({ user }) => {
   const [messageList, setMessageList] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchMessages = async () => {
+    const loadMessageHistory = async () => {
       try {
+        setLoading(true);
         const response = await messages.getMessages(user.id);
         setMessageList(response.data);
       } catch (error) {
-        console.error('Error fetching messages:', error);
+        setError('Failed to load message history');
+      } finally {
+        setLoading(false);
       }
     };
-    fetchMessages();
+
+    if (user) loadMessageHistory();
   }, [user]);
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
     
     try {
-      await messages.sendMessage(user.id, newMessage);
-      setMessageList([...messageList, {
-        id: Date.now(),
-        text: newMessage,
-        sender: 'me',
-        timestamp: new Date().toISOString()
-      }]);
+      const response = await messages.sendMessage(user.id, newMessage);
+      setMessageList([...messageList, response.data]);
       setNewMessage('');
     } catch (error) {
-      console.error('Error sending message:', error);
+      setError('Failed to send message');
     }
   };
 
+  if (error) return <div className="error">{error}</div>;
+  if (loading) return <div className="loading">Loading messages...</div>;
+
   return (
     <div className="conversation-container">
-      <div className="header">
-        <h4>Conversation with {user.name}</h4>
-      </div>
-      <div className="messages">
-        {messageList.map(message => (
-          <div key={message.id} className={`message ${message.sender}`}>
-            <div className="message-content">{message.text}</div>
-            <div className="message-time">
-              {new Date(message.timestamp).toLocaleTimeString()}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Message list rendering */}
       <div className="message-input">
         <input
-          type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Type a message..."
         />
         <button onClick={handleSend}>Send</button>
       </div>
     </div>
   );
 };
-
-export default Conversation;
