@@ -37,7 +37,7 @@ function RegisterPage() {
 
   return (
 <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="bg-white ">
+      <div className="bg-white bg-opacity-90 backdrop-blur-md rounded-xl shadow-2xl p-10 max-w-md w-full">
         <h2 className="text-4xl font-bold text-center text-gray-800 mb-6 drop-shadow-md">Register</h2>
         <form onSubmit={handleRegister} className="space-y-4">
           <input
