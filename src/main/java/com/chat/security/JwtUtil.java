@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.List;
 
 @Component
 public class JwtUtil {
@@ -23,12 +22,9 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String username, List<String> roles) {
+    public String generateToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
-                .claim("roles", roles)
-                .setIssuer("chat-app")
-                .setAudience("chat-app-users")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationInMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
@@ -36,26 +32,24 @@ public class JwtUtil {
     }
 
     public String extractUsername(String token) {
-        return parseToken(token).getBody().getSubject();
-    }
-
-    public List<String> extractRoles(String token) {
-        return parseToken(token).getBody().get("roles", List.class);
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
 
     public boolean validateToken(String token) {
         try {
-            parseToken(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
-    }
-
-    private Jws<Claims> parseToken(String token) {
-        return Jwts.parserBuilder()
+            Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            // Optionally log invalid token attempts here
+            return false;
+        }
     }
 }

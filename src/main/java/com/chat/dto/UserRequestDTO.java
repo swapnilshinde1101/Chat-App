@@ -2,21 +2,18 @@ package com.chat.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class UserRequestDTO {
-    
-    @NotBlank(message = "Name is required")
+    @NotBlank
     private String name;
 
-    @Email(message = "Invalid email format")
-    @NotBlank(message = "Email is required")
+    @Email @NotBlank
     private String email;
 
-    @NotBlank(message = "Password is required")
+    @NotBlank
+    @Size(min = 6)
     private String password;
 }

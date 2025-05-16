@@ -17,25 +17,29 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String content;
 
-    @Column(name = "is_read")
-    private boolean isRead;
+    @Column(name = "is_read", nullable = false)
+    private boolean isRead = false;
 
+    @Column(nullable = false)
     private LocalDateTime timestamp;
 
-    @ManyToOne
-    @JoinColumn(name = "sender_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id", nullable = false)
     @JsonIgnoreProperties({"messagesSent", "messagesReceived", "password"})
     private User sender;
 
-    @ManyToOne
-    @JoinColumn(name = "receiver_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receiver_id", nullable = false)
     @JsonIgnoreProperties({"messagesSent", "messagesReceived", "password"})
     private User receiver;
 
     @PrePersist
     protected void onCreate() {
-        this.timestamp = LocalDateTime.now();
+        if (timestamp == null) {
+            this.timestamp = LocalDateTime.now();
+        }
     }
 }

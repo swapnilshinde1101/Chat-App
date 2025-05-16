@@ -3,9 +3,10 @@ package com.chat.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.List;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+
+import java.util.List;
 
 @Entity
 @Data
@@ -27,12 +28,12 @@ public class User {
     private String email;
 
     @JsonIgnore
+    @NotBlank(message = "Password is mandatory")
     private String password;
 
     @Builder.Default
     private String role = "USER"; // USER or ADMIN
 
-    @Column(name = "enabled")
     @Builder.Default
     private boolean enabled = true;
 

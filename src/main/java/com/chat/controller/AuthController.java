@@ -23,8 +23,8 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
-    private final PasswordEncoder passwordEncoder;      // ← new
-    private final UserRepository userRepository;        // ← new
+    private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
 
     public AuthController(AuthenticationManager authManager,
                           CustomUserDetailsService uds,
@@ -41,22 +41,21 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
         if (userRepository.existsByEmail(req.getEmail())) {
-            return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body("Email already in use");
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body("{\"error\":\"Email already in use\"}");
         }
 
         User user = new User();
         user.setName(req.getName().trim());
         user.setEmail(req.getEmail().toLowerCase());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
-        // set any default roles/flags on user…
+        user.setRole("USER"); // default user role
+        user.setEnabled(true);
 
         userRepository.save(user);
 
-        return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body("User registered successfully");
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body("{\"message\":\"User registered successfully\"}");
     }
 
     @PostMapping("/login")
@@ -69,17 +68,18 @@ public class AuthController {
                 )
             );
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("{\"error\":\"Invalid email or password\"}");
         } catch (DisabledException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User account is disabled");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body("{\"error\":\"User account is disabled\"}");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("{\"error\":\"An internal error occurred\"}");
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
         String token = jwtUtil.generateToken(userDetails.getUsername());
         return ResponseEntity.ok(new LoginResponse("Login successful", token));
-        
     }
-
 }

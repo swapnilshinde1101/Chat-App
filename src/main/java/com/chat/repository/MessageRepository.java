@@ -1,6 +1,7 @@
 package com.chat.repository;
 
 import com.chat.entity.Message;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

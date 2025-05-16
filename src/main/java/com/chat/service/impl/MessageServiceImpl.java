@@ -1,11 +1,10 @@
 package com.chat.service.impl;
 
-
 import com.chat.entity.Message;
 import com.chat.repository.MessageRepository;
 import com.chat.service.MessageService;
-
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,7 +18,9 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    @Transactional
     public Message saveMessage(Message message) {
+        // Optional: validate sender/receiver exist here or in controller or via UserService
         return messageRepository.save(message);
     }
 
@@ -34,11 +35,12 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    @Transactional
     public void markAsRead(Long messageId) {
-        Message m = messageRepository.findById(messageId)
+        Message message = messageRepository.findById(messageId)
             .orElseThrow(() -> new IllegalArgumentException("Message not found"));
-        m.setRead(true);
-        messageRepository.save(m);
+        message.setRead(true);
+        messageRepository.save(message);
     }
 
     @Override

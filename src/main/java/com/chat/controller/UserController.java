@@ -1,12 +1,12 @@
 package com.chat.controller;
 
 import com.chat.dto.UserDTO;
-import com.chat.dto.UserRequestDTO;
 import com.chat.entity.User;
 import com.chat.service.UserService;
 
-import jakarta.validation.Valid;
-
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,36 +21,55 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping
-    public UserDTO createUser(@Valid @RequestBody UserRequestDTO userRequest) {
-        User user = User.builder()
-                .name(userRequest.getName())
-                .email(userRequest.getEmail())
-                .password(userRequest.getPassword()) // password hashing comes in next step
-                .build();
+    // Get current logged-in user's profile
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getCurrentUserProfile() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();  // assuming username = email
 
-        User savedUser = userService.saveUser(user);
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
 
-        return UserDTO.builder()
-                .id(savedUser.getId())
-                .name(savedUser.getName())
-                .email(savedUser.getEmail())
-                .role(savedUser.getRole())
-                .enabled(savedUser.isEnabled())
-                .build();
+        UserDTO dto = UserDTO.builder()
+            .id(user.getId())
+            .name(user.getName())
+            .email(user.getEmail())
+            .role(user.getRole())
+            .enabled(user.isEnabled())
+            .build();
+
+        return ResponseEntity.ok(dto);
     }
 
-
-
+    // Get user by id
     @GetMapping("/{id}")
-    public User getUser(@PathVariable Long id){
-        return userService.getUserById(id);
+    public ResponseEntity<UserDTO> getUser(@PathVariable Long id){
+        User user = userService.getUserById(id);
+        if(user == null){
+            return ResponseEntity.notFound().build();
+        }
+        UserDTO dto = UserDTO.builder()
+            .id(user.getId())
+            .name(user.getName())
+            .email(user.getEmail())
+            .role(user.getRole())
+            .enabled(user.isEnabled())
+            .build();
+        return ResponseEntity.ok(dto);
     }
 
+    // List all users
     @GetMapping
-    public List<User> getAllUsers(){
-        return userService.getAllUsers();
+    public List<UserDTO> getAllUsers(){
+        return userService.getAllUsers().stream().map(user -> UserDTO.builder()
+            .id(user.getId())
+            .name(user.getName())
+            .email(user.getEmail())
+            .role(user.getRole())
+            .enabled(user.isEnabled())
+            .build()
+        ).toList();
     }
-    
-    
 }

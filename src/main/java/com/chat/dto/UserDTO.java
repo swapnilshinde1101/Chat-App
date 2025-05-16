@@ -1,10 +1,9 @@
 package com.chat.dto;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class UserDTO {
     private Long id;
