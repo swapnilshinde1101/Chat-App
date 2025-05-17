@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+
+// Create axios instance
 const API = axios.create({
   baseURL: 'http://localhost:8080/api',
   headers: {
@@ -28,18 +30,25 @@ API.interceptors.response.use(
   }
 );
 
-export const auth = {
+// Helper function to validate auth responses
+const validateAuthResponse = (data) => {
+  if (!data || typeof data !== 'object') return false;
+  return data.token && data.user && data.user.id;
+};
+
+// Auth API methods
+const auth = {
   login: (username, password) => 
     API.post('/auth/login', { username, password })
       .then(res => {
-        localStorage.setItem('token', res.data.token);
-        localStorage.setItem('user', JSON.stringify(res.data.user));
-        return res.data;
-      })
-      .catch(err => {
-        throw new Error(err.response?.data?.error || 'Login failed');
+        if (validateAuthResponse(res.data)) {
+          localStorage.setItem('token', res.data.token);
+          localStorage.setItem('user', JSON.stringify(res.data.user));
+          return res.data;
+        }
+        throw new Error('Invalid response from server');
       }),
-
+  
   signup: (userData) => 
     API.post('/auth/register', {
       username: userData.username,
@@ -47,20 +56,18 @@ export const auth = {
       password: userData.password,
       confirmPassword: userData.confirmPassword
     })
-    .then(res => res.data)
-    .catch(err => {
-      throw new Error(err.response?.data || err.message || 'Registration failed');
-    })
 };
 
-export const users = {
+// Users API methods
+const users = {
   getCurrentUser: () => API.get('/users/me'),
   getUserById: (id) => API.get(`/users/${id}`),
   getAllUsers: () => API.get('/users'),
   searchUsers: (query) => API.get('/users/search', { params: { query } })
 };
 
-export const messages = {
+// Messages API methods
+const messages = {
   sendMessage: (receiverId, content) => 
     API.post('/messages', { receiverId, content }),
   
@@ -75,8 +82,18 @@ export const messages = {
   getAllConversations: () => API.get('/messages/conversations')
 };
 
-export const chats = {
+// Chats API methods
+const chats = {
   getChatList: () => API.get('/messages/conversations'),
   createGroupChat: (participants) => 
     API.post('/chats/group', { participants })
+};
+
+// Export all API methods
+export { 
+  API as default,
+  auth,
+  users,
+  messages,
+  chats
 };

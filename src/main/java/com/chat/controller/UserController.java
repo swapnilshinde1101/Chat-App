@@ -35,7 +35,7 @@ public class UserController {
 
         UserDTO dto = UserDTO.builder()
             .id(user.getId())
-            .name(user.getUsername())
+            .username(user.getUsername())
             .email(user.getEmail())
             .role(user.getRole())
             .enabled(user.isEnabled())
@@ -53,7 +53,7 @@ public class UserController {
         }
         UserDTO dto = UserDTO.builder()
             .id(user.getId())
-            .name(user.getUsername())
+            .username(user.getUsername())
             .email(user.getEmail())
             .role(user.getRole())
             .enabled(user.isEnabled())
@@ -65,7 +65,7 @@ public class UserController {
     public List<UserDTO> getAllUsers(){
         return userService.getAllUsers().stream().map(user -> UserDTO.builder()
             .id(user.getId())
-            .name(user.getUsername())
+            .username(user.getUsername())
             .email(user.getEmail())
             .role(user.getRole())
             .enabled(user.isEnabled())

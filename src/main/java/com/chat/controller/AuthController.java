@@ -2,10 +2,13 @@ package com.chat.controller;
 
 import com.chat.security.JwtUtil;
 
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import com.chat.security.CustomUserDetailsService;
 import com.chat.dto.RegisterRequest;
+import com.chat.dto.UserDTO;
 import com.chat.entity.User;
 import com.chat.repository.UserRepository;
 import com.chat.request.LoginRequest;
@@ -17,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -68,6 +72,7 @@ public class AuthController {
 
         // Set role as String "USER"
         user.setRole("USER");
+        user.setEnabled(true); 
 
         userRepository.save(user);
 
@@ -81,21 +86,69 @@ public class AuthController {
         try {
             authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                    request.getUsername(),   // changed from email to username
+                    request.getUsername(),
                     request.getPassword()
                 )
             );
+            
+            // Get the authenticated user details
+            UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
+            
+            // Find the full user entity
+            User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            
+            // Generate token
+            String token = jwtUtil.generateToken(userDetails.getUsername());
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Login successful",
+                "token", token,
+                "user", Map.of(
+                    "id", user.getId(),
+                    "username", user.getUsername(),
+                    "email", user.getEmail(),
+                    "role", user.getRole(),
+                    "enabled", user.isEnabled()
+                )
+            ));
+            
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid username or password"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Invalid username or password"));
         } catch (DisabledException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "User account is disabled"));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("error", "User account is disabled"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An internal error occurred"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "An internal error occurred"));
         }
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
-        String token = jwtUtil.generateToken(userDetails.getUsername());
-        return ResponseEntity.ok(new LoginResponse("Login successful", token));
     }
-
+    
+    @GetMapping("/verify")
+    public ResponseEntity<?> verifyToken(HttpServletRequest request) {
+        try {
+            String token = jwtUtil.resolveToken(request);
+            if (token != null && jwtUtil.validateToken(token)) {
+                // Fixed method call below
+                String username = jwtUtil.extractUsername(token);
+                User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                
+                return ResponseEntity.ok(Map.of(
+                	    "authenticated", true,
+                	    "user", UserDTO.builder()
+                	        .id(user.getId())
+                	        .username(user.getUsername())
+                	        .email(user.getEmail())
+                	        .role(user.getRole()) // Add role mapping
+                	        .enabled(user.isEnabled()) // Add enabled status
+                	        .build()
+                	));
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (JwtException | UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
 }

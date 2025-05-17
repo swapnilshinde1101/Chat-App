@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
+import API from '../api';
 import { auth } from '../api';
 
 const AuthContext = createContext();
@@ -8,32 +8,31 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const verifyToken = async (token) => {
+    try {
+      const response = await API.get('/auth/verify', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data.authenticated;
+    } catch (error) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     const initializeAuth = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const userData = localStorage.getItem('user');
-        
-        if (token && userData) {
-          // Verify token is still valid
-          const response = await axios.get('/api/auth/verify', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          
-          if (response.data.valid) {
-            setCurrentUser(JSON.parse(userData));
-          } else {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-          }
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+      
+      if (token && userData) {
+        const isValid = await verifyToken(token);
+        if (isValid) {
+          setCurrentUser(JSON.parse(userData));
+        } else {
+          logout();
         }
-      } catch (error) {
-        console.error('Auth verification failed:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     initializeAuth();
@@ -42,28 +41,15 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     try {
       const response = await auth.login(username, password);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify({
-        id: response.data.userId,
-        username,
-        email: response.data.email
-      }));
-      setCurrentUser({
-        id: response.data.userId,
-        username,
-        email: response.data.email
-      });
-      return response.data;
+      if (response?.token && response?.user) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setCurrentUser(response.user);
+        return response;
+      }
+      throw new Error('Invalid response format');
     } catch (error) {
-      throw error;
-    }
-  };
-
-  const signup = async (username, email, password) => {
-    try {
-      const response = await auth.signup(username, email, password);
-      return response.data;
-    } catch (error) {
+      logout();
       throw error;
     }
   };
@@ -78,7 +64,6 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{ 
       currentUser, 
       login, 
-      signup, 
       logout,
       loading 
     }}>

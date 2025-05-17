@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom'; // Added useLocation
 import { FaUser, FaLock } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,6 +17,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation(); // Properly get location
 
   useEffect(() => {
     const newErrors = {};
@@ -26,25 +28,23 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Check if there are any errors
-    if (errors.username || errors.password) {
-      return;
-    }
-
     setLoading(true);
+    setErrors({...errors, general: ''});
+
     try {
-      await login(formData.username, formData.password);
-      navigate('/inbox');
+      const response = await login(formData.username, formData.password);
+      const from = location.state?.from?.pathname || '/inbox';
+      navigate(from, { replace: true });
     } catch (error) {
-      setErrors(prev => ({ 
-        ...prev, 
-        general: error.response?.data?.error || 'Login failed. Check your credentials.' 
-      }));
+      setErrors({
+        ...errors,
+        general: error.message || 'Login failed. Check your credentials.'
+      });
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 flex items-center justify-center p-4">
@@ -67,6 +67,7 @@ const Login = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Username Field - unchanged */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                 Username
@@ -100,6 +101,7 @@ const Login = () => {
               )}
             </div>
 
+            {/* Password Field - unchanged */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password

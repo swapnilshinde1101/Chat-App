@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -17,29 +17,55 @@ function App() {
               <Inbox />
             </PrivateRoute>
           } />
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>
     </Router>
   );
 }
 
-// Update PrivateRoute component
+// Updated PrivateRoute component
 const PrivateRoute = ({ children }) => {
-  const { currentUser } = useAuth();
-  const [verified, setVerified] = useState(false);
+  const { currentUser, loading } = useAuth(); // Added loading state
+  const location = useLocation();
+  const [authVerified, setAuthVerified] = useState(false);
 
   useEffect(() => {
-    const verifyToken = async () => {
-      if (currentUser?.token) {
-        const isValid = await verifyToken(currentUser.token);
-        setVerified(isValid);
+    if (!currentUser?.token) {
+      setAuthVerified(false);
+      return;
+    }
+
+    const verifyAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/verify', {
+          headers: {
+            'Authorization': `Bearer ${currentUser.token}`
+          }
+        });
+        
+        if (!response.ok) throw new Error('Verification failed');
+        
+        const data = await response.json();
+        setAuthVerified(data.authenticated);
+      } catch (error) {
+        console.error('Token verification failed:', error);
+        setAuthVerified(false);
       }
     };
-    verifyToken();
+
+    verifyAuth();
   }, [currentUser]);
 
-  return verified ? children : <Navigate to="/login" />;
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  }
+
+  if (!authVerified) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
 };
 
 export default App;
