@@ -35,9 +35,6 @@ public class Message {
     @JoinColumn(name = "receiver_id", nullable = false)
     @JsonIgnoreProperties({"messagesSent", "messagesReceived", "password"})
     private User receiver;
-    
-    
-    
 
     @PrePersist
     protected void onCreate() {
@@ -45,7 +42,4 @@ public class Message {
             this.timestamp = LocalDateTime.now();
         }
     }
-
-	
-    
 }

@@ -1,7 +1,6 @@
 package com.chat.controller;
 
 import com.chat.dto.UserDTO;
-import java.util.stream.Collectors;
 import com.chat.entity.User;
 import com.chat.service.UserService;
 
@@ -11,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -26,22 +26,14 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserDTO> getCurrentUserProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName(); // Get username instead of email
-        
-        User user = userService.findByUsername(username); // Change method call
+        String username = authentication.getName();  // Typically username is principal name
+
+        User user = userService.findByUsername(username);
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
 
-        UserDTO dto = UserDTO.builder()
-            .id(user.getId())
-            .username(user.getUsername())
-            .email(user.getEmail())
-            .role(user.getRole())
-            .enabled(user.isEnabled())
-            .build();
-
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(toDTO(user));
     }
 
     // Get user by id
@@ -51,26 +43,25 @@ public class UserController {
         if(user == null){
             return ResponseEntity.notFound().build();
         }
-        UserDTO dto = UserDTO.builder()
-            .id(user.getId())
-            .username(user.getUsername())
-            .email(user.getEmail())
-            .role(user.getRole())
-            .enabled(user.isEnabled())
-            .build();
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(toDTO(user));
     }
 
+    // Get all users
     @GetMapping
-    public List<UserDTO> getAllUsers(){
-        return userService.getAllUsers().stream().map(user -> UserDTO.builder()
-            .id(user.getId())
-            .username(user.getUsername())
-            .email(user.getEmail())
-            .role(user.getRole())
-            .enabled(user.isEnabled())
-            .build()
-        ).collect(Collectors.toList());
+    public ResponseEntity<List<UserDTO>> getAllUsers(){
+        List<UserDTO> users = userService.getAllUsers().stream()
+            .map(this::toDTO)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(users);
     }
 
+    private UserDTO toDTO(User user) {
+        return UserDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .enabled(user.isEnabled())
+                .build();
+    }
 }

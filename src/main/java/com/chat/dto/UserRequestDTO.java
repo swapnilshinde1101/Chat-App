@@ -10,7 +10,8 @@ public class UserRequestDTO {
     @NotBlank
     private String username;
 
-    @Email @NotBlank
+    @Email
+    @NotBlank
     private String email;
 
     @NotBlank

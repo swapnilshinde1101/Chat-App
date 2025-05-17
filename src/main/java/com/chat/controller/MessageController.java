@@ -2,17 +2,13 @@ package com.chat.controller;
 
 import com.chat.dto.ConversationSummaryDTO;
 import com.chat.dto.MessageDTO;
-import com.chat.entity.User;
-
 import com.chat.entity.Message;
 import com.chat.entity.User;
 import com.chat.service.MessageService;
 import com.chat.service.UserService;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,12 +24,11 @@ import java.util.stream.Collectors;
 public class MessageController {
 
     private final MessageService messageService;
-    private final UserService    userService;
+    private final UserService userService;
 
-    public MessageController(MessageService messageService,
-                             UserService userService) {
+    public MessageController(MessageService messageService, UserService userService) {
         this.messageService = messageService;
-        this.userService    = userService;
+        this.userService = userService;
     }
 
     public static class SendMessageRequest {
@@ -46,14 +41,14 @@ public class MessageController {
 
     @PreAuthorize("hasRole('USER')")
     @PostMapping
-    public ResponseEntity<MessageDTO> sendMessage(
-            @Valid @RequestBody SendMessageRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        // Look up full User entities
-        User sender   = userService.findByEmail(userDetails.getUsername());
+    public ResponseEntity<?> sendMessage(@Valid @RequestBody SendMessageRequest request,
+                                         @AuthenticationPrincipal UserDetails userDetails) {
+        User sender = userService.findByEmail(userDetails.getUsername());
+
         User receiver = userService.getUserById(request.receiverId);
         if (receiver == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(false, "Receiver not found"));
         }
 
         Message message = Message.builder()
@@ -71,13 +66,13 @@ public class MessageController {
     public ResponseEntity<List<MessageDTO>> getMessagesBetweenUsers(
             @RequestParam Long otherUserId,
             @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = userService.findByEmail(userDetails.getUsername());
 
-        Long currentUserId = userService.findByEmail(userDetails.getUsername()).getId();
         List<MessageDTO> dtos = messageService
-            .getMessagesBetweenUsers(currentUserId, otherUserId)
-            .stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+                .getMessagesBetweenUsers(currentUser.getId(), otherUserId)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
     }
@@ -86,13 +81,13 @@ public class MessageController {
     @GetMapping("/unread")
     public ResponseEntity<List<MessageDTO>> getUnreadForUser(
             @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = userService.findByEmail(userDetails.getUsername());
 
-        Long currentUserId = userService.findByEmail(userDetails.getUsername()).getId();
         List<MessageDTO> dtos = messageService
-            .getUnreadMessagesFor(currentUserId)
-            .stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+                .getUnreadMessagesFor(currentUser.getId())
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
     }
@@ -113,15 +108,35 @@ public class MessageController {
     @GetMapping("/all")
     public ResponseEntity<List<MessageDTO>> getAllForUser(
             @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = userService.findByEmail(userDetails.getUsername());
 
-        Long currentUserId = userService.findByEmail(userDetails.getUsername()).getId();
         List<MessageDTO> dtos = messageService
-            .getAllMessagesFor(currentUserId)
-            .stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+                .getAllMessagesFor(currentUser.getId())
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/conversations")
+    public ResponseEntity<List<ConversationSummaryDTO>> getUserConversations(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userService.findByEmail(userDetails.getUsername());
+
+        List<ConversationSummaryDTO> conversations = messageService.getUserConversations(user.getId());
+        return ResponseEntity.ok(conversations);
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @PutMapping("/mark-read")
+    public ResponseEntity<Void> markConversationAsRead(@RequestParam Long senderId,
+                                                      @AuthenticationPrincipal UserDetails userDetails) {
+        User receiver = userService.findByEmail(userDetails.getUsername());
+
+        messageService.markConversationAsRead(receiver.getId(), senderId);
+        return ResponseEntity.ok().build();
     }
 
     private MessageDTO toDTO(Message m) {
@@ -139,33 +154,19 @@ public class MessageController {
 
     static class ApiResponse {
         private final boolean success;
-        private final String  message;
+        private final String message;
 
-        public ApiResponse(boolean success, String message){
+        public ApiResponse(boolean success, String message) {
             this.success = success;
             this.message = message;
         }
-        public boolean isSuccess() { return success; }
-        public String  getMessage() { return message; }
-    }
-    
-    @PreAuthorize("hasRole('USER')")
-    @GetMapping("/conversations")
-    public ResponseEntity<List<ConversationSummaryDTO>> getUserConversations(
-        @AuthenticationPrincipal UserDetails userDetails) {
-        
-        User user = userService.findByEmail(userDetails.getUsername());
-        return ResponseEntity.ok(messageService.getUserConversations(user.getId()));
-    }
 
-    @PreAuthorize("hasRole('USER')")
-    @PutMapping("/mark-read")
-    public ResponseEntity<Void> markConversationAsRead(
-        @RequestParam Long senderId,
-        @AuthenticationPrincipal UserDetails userDetails) {
-        
-        Long receiverId = userService.findByEmail(userDetails.getUsername()).getId();
-        messageService.markConversationAsRead(receiverId, senderId);
-        return ResponseEntity.ok().build();
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getMessage() {
+            return message;
+        }
     }
 }

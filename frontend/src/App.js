@@ -30,20 +30,11 @@ const PrivateRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    if (!loading && !currentUser) {
-      API.get('/auth/verify') // Now using the imported API
-        .catch(() => {
-          localStorage.removeItem('token');
-        });
-    }
-  }, [loading, currentUser]);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
+  if (loading) return <div>Loading...</div>;
   return currentUser ? children : <Navigate to="/login" state={{ from: location }} replace />;
 };
+
+
+
 
 export default App;

@@ -7,40 +7,38 @@ const Conversation = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
- useEffect(() => {
+  useEffect(() => {
     const loadConversation = async () => {
       try {
         setLoading(true);
-        
-        // Load conversation messages
         const messagesRes = await messages.getConversation(user.id);
-        setMessageList(messagesRes.data);
-        
-        // Mark all messages from this user as read
+        setMessageList(messagesRes.data || []);
         await messages.markConversationAsRead(user.id);
-        
       } catch (error) {
+        console.error(error);
         setError('Failed to load conversation');
       } finally {
         setLoading(false);
       }
     };
-    
-    loadConversation();
-  }, [user]);
 
+    if (user?.id) {
+      loadConversation();
+    }
+  }, [user]);
 
   const handleSend = async (messageText) => {
     if (!messageText.trim()) return;
-    
+
     try {
-      const response = await messages.sendMessage({
+      const res = await messages.sendMessage({
         receiverId: user.id,
-        content: messageText
+        content: messageText,
       });
-      
-      setMessageList([...messageList, response.data]);
+
+      setMessageList((prev) => [...prev, res.data]);
     } catch (error) {
+      console.error(error);
       setError('Failed to send message');
     }
   };
@@ -54,29 +52,31 @@ const Conversation = ({ user }) => {
       <div className="p-4 border-b bg-white">
         <h3 className="text-lg font-medium">Conversation with {user.username}</h3>
       </div>
-      
+
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messageList.map(msg => (
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        {messageList.map((msg) => (
           <div
             key={msg.id}
             className={`max-w-xs p-3 rounded-lg ${
-              msg.sender === user.id 
-                ? 'bg-gray-200 mr-auto' 
+              msg.sender === user.id
+                ? 'bg-gray-200 mr-auto'
                 : 'bg-blue-500 text-white ml-auto'
             }`}
           >
             <p>{msg.content}</p>
-            <p className={`text-xs mt-1 ${
-              msg.sender === user.id ? 'text-gray-500' : 'text-blue-100'
-            }`}>
+            <p
+              className={`text-xs mt-1 ${
+                msg.sender === user.id ? 'text-gray-500' : 'text-blue-100'
+              }`}
+            >
               {new Date(msg.timestamp).toLocaleTimeString()}
             </p>
           </div>
         ))}
       </div>
-      
-      {/* Input */}
+
+      {/* Chat Input */}
       <div className="p-4 border-t bg-white">
         <ChatInput onSend={handleSend} />
       </div>

@@ -26,14 +26,15 @@ export function AuthProvider({ children }) {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
       
-      if (token && userData) {
-        const isValid = await verifyToken();
-        if (isValid) {
-          setCurrentUser(JSON.parse(userData));
-        } else {
-          logout();
-        }
-      }
+    if (token && userData) {
+  const isValid = await verifyToken();
+  if (isValid) {
+    setCurrentUser(JSON.parse(userData));
+  } else {
+    logout();
+  }
+}
+
       setLoading(false);
     };
 

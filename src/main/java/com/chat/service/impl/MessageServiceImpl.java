@@ -8,6 +8,7 @@ import com.chat.repository.UserRepository;
 import com.chat.service.MessageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,9 +19,7 @@ public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
 
-    // Fixed constructor with both repositories
-    public MessageServiceImpl(MessageRepository messageRepository, 
-                            UserRepository userRepository) {
+    public MessageServiceImpl(MessageRepository messageRepository, UserRepository userRepository) {
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
     }
@@ -28,8 +27,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public Message saveMessage(Message message) {
-        // Validate sender and receiver exist
-        if (!userRepository.existsById(message.getSender().getId()) || 
+        if (!userRepository.existsById(message.getSender().getId()) ||
             !userRepository.existsById(message.getReceiver().getId())) {
             throw new IllegalArgumentException("Sender or receiver does not exist");
         }
@@ -59,51 +57,41 @@ public class MessageServiceImpl implements MessageService {
     public List<Message> getAllMessagesFor(Long userId) {
         return messageRepository.findByReceiverIdOrderByTimestampDesc(userId);
     }
-    
+
     @Override
     public List<ConversationSummaryDTO> getUserConversations(Long currentUserId) {
-        // Verify user exists
         if (!userRepository.existsById(currentUserId)) {
             throw new IllegalArgumentException("User not found");
         }
-        
-        // Get all unique conversation partners
+
         List<Long> partnerIds = messageRepository.findDistinctPartners(currentUserId);
-        
+
         return partnerIds.stream().map(partnerId -> {
             User partner = userRepository.findById(partnerId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-            
-            // Get last message in conversation
-            Message lastMessage = messageRepository.findLastMessageBetweenUsers(
-                currentUserId, partnerId);
-            
-            // Count unread messages
-            int unreadCount = messageRepository.countUnreadMessages(
-                currentUserId, partnerId);
-            
+
+            List<Message> lastMessages = messageRepository.findLastMessageBetweenUsers(currentUserId, partnerId, PageRequest.of(0,1));
+            Message lastMessage = lastMessages.isEmpty() ? null : lastMessages.get(0);
+            int unreadCount = messageRepository.countUnreadMessages(currentUserId, partnerId);
+
             return ConversationSummaryDTO.builder()
-            	    .userId(partner.getId())
-            	    .username(partner.getUsername())
-            	    .lastMessage(lastMessage != null ? lastMessage.getContent() : "No messages")
-            	    .unreadCount(unreadCount)
-            	    .timestamp(lastMessage != null ? lastMessage.getTimestamp().toString() : "")
-            	    .build();
+                .userId(partner.getId())
+                .username(partner.getUsername())
+                .lastMessage(lastMessage != null ? lastMessage.getContent() : "No messages")
+                .unreadCount(unreadCount)
+                .timestamp(lastMessage != null ? lastMessage.getTimestamp().toString() : "")
+                .build();
         }).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public void markConversationAsRead(Long currentUserId, Long senderId) {
-        // Verify users exist
-        if (!userRepository.existsById(currentUserId) || 
-            !userRepository.existsById(senderId)) {
+        if (!userRepository.existsById(currentUserId) || !userRepository.existsById(senderId)) {
             throw new IllegalArgumentException("User not found");
         }
-        
-        List<Message> unreadMessages = messageRepository.findUnreadMessages(
-            currentUserId, senderId);
-        
+
+        List<Message> unreadMessages = messageRepository.findUnreadMessages(currentUserId, senderId);
         unreadMessages.forEach(message -> {
             message.setRead(true);
             messageRepository.save(message);
