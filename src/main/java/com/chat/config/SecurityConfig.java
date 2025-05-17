@@ -1,5 +1,6 @@
 package com.chat.config;
 
+import com.chat.security.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,11 +17,18 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-	
-	  @Bean
-	    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-	        return authenticationConfiguration.getAuthenticationManager();
-	    }
+
+    private final CustomUserDetailsService userDetailsService;
+
+    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        // Spring Boot will wire userDetailsService and passwordEncoder automatically
+        return authenticationConfiguration.getAuthenticationManager();
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -29,11 +37,14 @@ public class SecurityConfig {
             .csrf().disable()
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
-                .anyRequest().authenticated() // 🔒 Protect other APIs
+                .anyRequest().authenticated()
             )
-            .formLogin() // Enable default form login behavior
-            .and()
-            .logout(logout -> logout.logoutUrl("/api/auth/logout").permitAll());
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS) // for REST API stateless
+            )
+            // Disable formLogin and HTTP Basic because you handle login via API manually
+            .httpBasic().disable()
+            .formLogin().disable();
 
         return http.build();
     }

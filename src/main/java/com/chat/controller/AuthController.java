@@ -4,11 +4,9 @@ import com.chat.dto.RegisterRequest;
 import com.chat.entity.User;
 import com.chat.repository.UserRepository;
 import com.chat.request.LoginRequest;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
@@ -16,13 +14,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:3000")  // allow your frontend origin
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -54,7 +52,7 @@ public class AuthController {
         User user = new User();
         user.setUsername(registerRequest.getUsername());
         user.setEmail(registerRequest.getEmail());
-        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword())); // encode here
         user.setRole("USER");
         user.setEnabled(true);
 
@@ -102,10 +100,9 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null) {
-            new SecurityContextLogoutHandler().logout(request, response, auth);
-        }
+        // For stateless JWT tokens logout is usually client side (remove token)
+        // If session-based, invalidate session here:
+        SecurityContextHolder.clearContext();
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 }
