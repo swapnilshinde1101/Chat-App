@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:8080/api', // Make sure this matches your backend port
+  baseURL: 'http://localhost:8080/api',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -33,6 +33,7 @@ export const auth = {
     API.post('/auth/login', { username, password })
       .then(res => {
         localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
         return res.data;
       })
       .catch(err => {
@@ -40,7 +41,7 @@ export const auth = {
       }),
 
   signup: (userData) => 
-    API.post('/auth/register', {  // Changed from /signup to /register
+    API.post('/auth/register', {
       username: userData.username,
       email: userData.email,
       password: userData.password,
@@ -48,31 +49,34 @@ export const auth = {
     })
     .then(res => res.data)
     .catch(err => {
-      throw new Error(err.response?.data || 'Registration failed');
+      throw new Error(err.response?.data || err.message || 'Registration failed');
     })
 };
 
 export const users = {
   getCurrentUser: () => API.get('/users/me'),
   getUserById: (id) => API.get(`/users/${id}`),
-  getAllUsers: () => API.get('/users')
+  getAllUsers: () => API.get('/users'),
+  searchUsers: (query) => API.get('/users/search', { params: { query } })
 };
 
 export const messages = {
   sendMessage: (receiverId, content) => 
     API.post('/messages', { receiverId, content }),
   
-  getMessagesBetween: (otherUserId) => 
-    API.get('/messages/between', { params: { otherUserId } }),
+  getConversation: (otherUserId) => 
+    API.get(`/messages/conversation/${otherUserId}`),
   
   getUnreadMessages: () => API.get('/messages/unread'),
   
   markAsRead: (messageId) => 
     API.put(`/messages/${messageId}/read`),
   
-  getAllMessages: () => API.get('/messages/all')
+  getAllConversations: () => API.get('/messages/conversations')
 };
 
 export const chats = {
-  getUserChats: () => API.get('/messages/all') // Using messages endpoint since no dedicated chats endpoint
+  getChatList: () => API.get('/messages/conversations'),
+  createGroupChat: (participants) => 
+    API.post('/chats/group', { participants })
 };

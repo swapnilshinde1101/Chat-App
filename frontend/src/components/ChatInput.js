@@ -1,25 +1,28 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const ChatInput = ({ onSend }) => {
   const [message, setMessage] = useState('');
 
-  const sendMessage = () => {
+  const handleSend = () => {
     if (message.trim() === '') return;
     onSend(message);
     setMessage('');
   };
 
   return (
-    <div style={{ marginTop: '20px' }}>
+    <div className="flex">
       <input
         type="text"
         placeholder="Type your message..."
+        className="flex-1 p-2 border rounded-l focus:outline-none focus:ring-1 focus:ring-blue-500"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-        style={{ padding: '10px', width: '70%' }}
+        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
       />
-      <button onClick={sendMessage} style={{ padding: '10px 20px', marginLeft: '10px' }}>
+      <button
+        onClick={handleSend}
+        className="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600"
+      >
         Send
       </button>
     </div>

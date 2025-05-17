@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../api';
 
@@ -8,52 +9,80 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      setCurrentUser(JSON.parse(user));
-    }
-    setLoading(false);
+    const initializeAuth = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
+        
+        if (token && userData) {
+          // Verify token is still valid
+          const response = await axios.get('/api/auth/verify', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.data.valid) {
+            setCurrentUser(JSON.parse(userData));
+          } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
+        }
+      } catch (error) {
+        console.error('Auth verification failed:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (username, password) => {
-    const response = await auth.login(username, password);
-    localStorage.setItem('user', JSON.stringify(response.data));
-    setCurrentUser(response.data);
+    try {
+      const response = await auth.login(username, password);
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify({
+        id: response.data.userId,
+        username,
+        email: response.data.email
+      }));
+      setCurrentUser({
+        id: response.data.userId,
+        username,
+        email: response.data.email
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   };
 
   const signup = async (username, email, password) => {
-    const response = await auth.signup(username, email, password);
-    localStorage.setItem('user', JSON.stringify(response.data));
-    setCurrentUser(response.data);
+    try {
+      const response = await auth.signup(username, email, password);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
     setCurrentUser(null);
   };
 
-  // Add token refresh logic
-useEffect(() => {
-  const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const res = await axios.get('/auth/refresh', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        localStorage.setItem('token', res.data.newToken);
-      } catch (err) {
-        localStorage.removeItem('token');
-      }
-    }
-    setLoading(false);
-  };
-  checkAuth();
-}, []);
-
   return (
-    <AuthContext.Provider value={{ currentUser, login, signup, logout }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ 
+      currentUser, 
+      login, 
+      signup, 
+      logout,
+      loading 
+    }}>
+      {children}
     </AuthContext.Provider>
   );
 }
