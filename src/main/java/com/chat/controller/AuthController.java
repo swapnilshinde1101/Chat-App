@@ -20,8 +20,9 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000")  // allow your frontend origin
+@CrossOrigin(origins = "http://localhost:3000")  // allow React’s origin
 public class AuthController {
+
 
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
@@ -61,42 +62,17 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "User registered successfully"));
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    loginRequest.getUsername(),
-                    loginRequest.getPassword()
-                )
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            User user = userRepository.findByUsername(loginRequest.getUsername())
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-            return ResponseEntity.ok(Map.of(
-                "message", "Login successful",
-                "user", Map.of(
-                    "id", user.getId(),
-                    "username", user.getUsername(),
-                    "email", user.getEmail(),
-                    "role", user.getRole()
-                )
-            ));
-
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid username or password"));
-        } catch (DisabledException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "User account is disabled"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An internal error occurred"));
-        }
+    @PostMapping("/api/auth/login")
+    public ResponseEntity<?> login(@RequestBody AuthRequest req) {
+        // authenticate user...
+        String jwt = tokenProvider.generateToken(user);
+        // Return JSON with token field
+        Map<String,String> response = new HashMap<>();
+        response.put("token", jwt);
+        response.put("username", user.getUsername());
+        return ResponseEntity.ok(response);
     }
+
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {

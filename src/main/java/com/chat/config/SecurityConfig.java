@@ -67,4 +67,13 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+    
+  
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.cors().and().csrf().disable();  // enable CORS & disable CSRF
+        // ...
+    }
+
+
 }
