@@ -2,7 +2,7 @@ import axios from 'axios';
 
 
 const API = axios.create({
-  baseURL: '/api', // Remove explicit port
+  baseURL: '/api', 
   headers: {
     'Content-Type': 'application/json'
   }
@@ -65,6 +65,7 @@ const users = {
   searchUsers: (query) => API.get('/users/search', { params: { query } })
 };
 
+// In api.js (frontend)
 const messages = {
   // Message sending
   sendMessage: (receiverId, content) => 
@@ -74,27 +75,25 @@ const messages = {
   getConversation: (otherUserId) => 
     API.get('/messages/between', { params: { otherUserId } }),
 
-  // Get all unread messages for current user
+  // Get all unread messages
   getUnreadMessages: () => API.get('/messages/unread'),
 
-  // Get all messages for current user (for inbox view)
+  // Get all messages
   getAllMessages: () => API.get('/messages/all'),
 
-  // Mark single message as read
+  // Mark message as read
   markAsRead: (messageId) => API.put(`/messages/${messageId}/read`),
 
-  // Mark entire conversation as read
+  // Get conversation list
+  getConversations: () => API.get('/messages/conversations'),
+
+  // Mark conversation as read
   markConversationAsRead: (senderId) => 
-    API.put('/messages/mark-read', { senderId }),
+    API.put('/messages/mark-read', null, { params: { senderId } }),
 
-    getConversations: (userId) => API.get(`/messages/conversations`),
-
-  markConversationAsRead: (receiverId, senderId) => 
-    API.put(`/messages/mark-read?senderId=${senderId}`),
-
+  // Get last message
   getLastMessage: (userId1, userId2) => 
-    API.get(`/messages/last?user1=${userId1}&user2=${userId2}`)
-
+    API.get('/messages/last', { params: { user1: userId1, user2: userId2 } })
 };
 
 // Chats API methods

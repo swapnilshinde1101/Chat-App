@@ -29,7 +29,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         );
     }
 
+//    private List<SimpleGrantedAuthority> getAuthorities(String role) {
+//        // Add ROLE_ prefix to match Spring Security conventions
+//        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
+//    }
+    
     private List<SimpleGrantedAuthority> getAuthorities(String role) {
-        return List.of(new SimpleGrantedAuthority(role));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 }

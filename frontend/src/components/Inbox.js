@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { chats, messages } from '../api';
+import { users, messages } from '../api'; // Added users import
 import Conversation from './Conversation';
 
 const Inbox = () => {
@@ -12,42 +12,15 @@ const Inbox = () => {
   const [error, setError] = useState('');
   const { currentUser } = useAuth();
 
-useEffect(() => {
+  useEffect(() => {
     const fetchChatData = async () => {
       try {
         setLoading(true);
         
-        // Get all messages involving current user
-        const allMessages = await messages.getAllMessages();
-        
-        // Extract unique user IDs from conversations
-        const participantIds = [
-          ...new Set(allMessages.data.map(msg => 
-            msg.senderId === currentUser.id ? msg.receiverId : msg.senderId
-          ))
-        ];
-        
-        // Get user details for each participant
-        const participants = await Promise.all(
-          participantIds.map(id => users.getUserById(id))
-        );
-        
-        // Build chat list with unread counts
-        const chatList = participants.map(user => {
-          const userMessages = allMessages.data.filter(
-            msg => msg.senderId === user.id || msg.receiverId === user.id
-          );
-          
-          return {
-            user: user.data,
-            lastMessage: userMessages[0]?.content,
-            unreadCount: userMessages.filter(
-              msg => msg.receiverId === currentUser.id && !msg.isRead
-            ).length
-          };
-        });
-        
-        setChatList(chatList);
+        // Use the conversation summary endpoint
+        const response = await messages.getConversations();
+        setChatList(response.data);
+
       } catch (error) {
         setError('Failed to load chats');
       } finally {
@@ -55,12 +28,13 @@ useEffect(() => {
       }
     };
     
-    fetchChatData();
-  }, [currentUser]);
-  
+    if (currentUser?.id) {
+      fetchChatData();
+    }
+  }, [currentUser?.id]); // Added proper dependency
 
   const filteredChats = chatList.filter(chat => {
-    const matchesSearch = chat.user.username.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = chat.username.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesMode = viewMode === 'unread' ? chat.unreadCount > 0 : true;
     return matchesSearch && matchesMode;
   });
@@ -96,15 +70,18 @@ useEffect(() => {
         <div className="flex-1 overflow-y-auto">
           {filteredChats.map(chat => (
             <div
-              key={chat.user.id}
+              key={chat.userId}
               className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${
                 chat.unreadCount > 0 ? 'bg-blue-50' : ''
               }`}
-              onClick={() => setSelectedUser(chat.user)}
+              onClick={() => setSelectedUser({
+                id: chat.userId,
+                username: chat.username
+              })}
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="font-medium">{chat.user.username}</p>
+                  <p className="font-medium">{chat.username}</p>
                   {chat.lastMessage && (
                     <p className="text-sm text-gray-500 truncate">
                       {chat.lastMessage}

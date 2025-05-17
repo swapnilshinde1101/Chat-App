@@ -15,6 +15,7 @@ import jakarta.validation.constraints.NotNull;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +44,7 @@ public class MessageController {
         public Long receiverId;
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping
     public ResponseEntity<MessageDTO> sendMessage(
             @Valid @RequestBody SendMessageRequest request,
@@ -64,6 +66,7 @@ public class MessageController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(saved));
     }
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/between")
     public ResponseEntity<List<MessageDTO>> getMessagesBetweenUsers(
             @RequestParam Long otherUserId,
@@ -79,6 +82,7 @@ public class MessageController {
         return ResponseEntity.ok(dtos);
     }
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/unread")
     public ResponseEntity<List<MessageDTO>> getUnreadForUser(
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -93,6 +97,7 @@ public class MessageController {
         return ResponseEntity.ok(dtos);
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PutMapping("/{id}/read")
     public ResponseEntity<?> markAsRead(@PathVariable Long id) {
         try {
@@ -104,6 +109,7 @@ public class MessageController {
         }
     }
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/all")
     public ResponseEntity<List<MessageDTO>> getAllForUser(
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -143,14 +149,16 @@ public class MessageController {
         public String  getMessage() { return message; }
     }
     
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/conversations")
     public ResponseEntity<List<ConversationSummaryDTO>> getUserConversations(
         @AuthenticationPrincipal UserDetails userDetails) {
         
-        Long userId = userService.findByEmail(userDetails.getUsername()).getId();
-        return ResponseEntity.ok(messageService.getUserConversations(userId));
+        User user = userService.findByEmail(userDetails.getUsername());
+        return ResponseEntity.ok(messageService.getUserConversations(user.getId()));
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PutMapping("/mark-read")
     public ResponseEntity<Void> markConversationAsRead(
         @RequestParam Long senderId,

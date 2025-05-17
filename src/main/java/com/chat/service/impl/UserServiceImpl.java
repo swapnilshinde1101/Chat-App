@@ -16,6 +16,12 @@ public class UserServiceImpl implements UserService {
     public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
+    
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
 
     @Override
     public User saveUser(User user) {

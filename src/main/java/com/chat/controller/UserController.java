@@ -26,9 +26,9 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserDTO> getCurrentUserProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();  // assuming username = email
-
-        User user = userService.findByEmail(email);
+        String username = authentication.getName(); // Get username instead of email
+        
+        User user = userService.findByUsername(username); // Change method call
         if (user == null) {
             return ResponseEntity.notFound().build();
         }

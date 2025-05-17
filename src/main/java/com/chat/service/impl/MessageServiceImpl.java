@@ -83,12 +83,12 @@ public class MessageServiceImpl implements MessageService {
                 currentUserId, partnerId);
             
             return ConversationSummaryDTO.builder()
-                .userId(partner.getId())
-                .username(partner.getUsername())
-                .lastMessage(lastMessage.getContent())
-                .unreadCount(unreadCount)
-                .timestamp(lastMessage.getTimestamp().toString())
-                .build();
+            	    .userId(partner.getId())
+            	    .username(partner.getUsername())
+            	    .lastMessage(lastMessage != null ? lastMessage.getContent() : "No messages")
+            	    .unreadCount(unreadCount)
+            	    .timestamp(lastMessage != null ? lastMessage.getTimestamp().toString() : "")
+            	    .build();
         }).collect(Collectors.toList());
     }
 

@@ -5,6 +5,8 @@ import com.chat.entity.User;
 import java.util.List;
 
 public interface UserService {
+	
+	 User findByUsername(String username);
 
     User saveUser(User user);
 

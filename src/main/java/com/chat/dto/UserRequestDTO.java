@@ -8,10 +8,7 @@ import lombok.Data;
 @Data
 public class UserRequestDTO {
     @NotBlank
-    private String username; // add username
-
-    @NotBlank
-    private String name;     // if you want to keep 'name' separately, else remove it
+    private String username;
 
     @Email @NotBlank
     private String email;
@@ -21,5 +18,5 @@ public class UserRequestDTO {
     private String password;
 
     @NotBlank
-    private String confirmPassword;  // add confirmPassword
+    private String confirmPassword;
 }
