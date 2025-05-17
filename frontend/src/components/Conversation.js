@@ -7,21 +7,28 @@ const Conversation = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const loadMessages = async () => {
+ useEffect(() => {
+    const loadConversation = async () => {
       try {
         setLoading(true);
-        const response = await messages.getMessagesBetween(user.id);
-        setMessageList(response.data);
+        
+        // Load conversation messages
+        const messagesRes = await messages.getConversation(user.id);
+        setMessageList(messagesRes.data);
+        
+        // Mark all messages from this user as read
+        await messages.markConversationAsRead(user.id);
+        
       } catch (error) {
-        setError('Failed to load messages');
+        setError('Failed to load conversation');
       } finally {
         setLoading(false);
       }
     };
     
-    loadMessages();
+    loadConversation();
   }, [user]);
+
 
   const handleSend = async (messageText) => {
     if (!messageText.trim()) return;

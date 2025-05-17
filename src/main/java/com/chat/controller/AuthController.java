@@ -130,21 +130,19 @@ public class AuthController {
         try {
             String token = jwtUtil.resolveToken(request);
             if (token != null && jwtUtil.validateToken(token)) {
-                // Fixed method call below
-                String username = jwtUtil.extractUsername(token);
+                String username =  jwtUtil.extractUsername(token);
+
                 User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
                 
                 return ResponseEntity.ok(Map.of(
-                	    "authenticated", true,
-                	    "user", UserDTO.builder()
-                	        .id(user.getId())
-                	        .username(user.getUsername())
-                	        .email(user.getEmail())
-                	        .role(user.getRole()) // Add role mapping
-                	        .enabled(user.isEnabled()) // Add enabled status
-                	        .build()
-                	));
+                    "authenticated", true,
+                    "user", UserDTO.builder()
+                        .id(user.getId())
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .build()
+                ));
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (JwtException | UsernameNotFoundException e) {

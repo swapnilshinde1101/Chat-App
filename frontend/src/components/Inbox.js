@@ -12,42 +12,52 @@ const Inbox = () => {
   const [error, setError] = useState('');
   const { currentUser } = useAuth();
 
-  useEffect(() => {
-    const fetchChats = async () => {
+useEffect(() => {
+    const fetchChatData = async () => {
       try {
         setLoading(true);
-        // Get all users first
-        const usersResponse = await chats.getAllUsers();
-        // Then get messages for current user
-        const messagesResponse = await messages.getAllMessages();
         
-        // Combine data to create chat list
-        const chatsWithUnread = usersResponse.data.map(user => {
-          const userMessages = messagesResponse.data.filter(
-            msg => msg.sender === user.id || msg.receiver === user.id
+        // Get all messages involving current user
+        const allMessages = await messages.getAllMessages();
+        
+        // Extract unique user IDs from conversations
+        const participantIds = [
+          ...new Set(allMessages.data.map(msg => 
+            msg.senderId === currentUser.id ? msg.receiverId : msg.senderId
+          ))
+        ];
+        
+        // Get user details for each participant
+        const participants = await Promise.all(
+          participantIds.map(id => users.getUserById(id))
+        );
+        
+        // Build chat list with unread counts
+        const chatList = participants.map(user => {
+          const userMessages = allMessages.data.filter(
+            msg => msg.senderId === user.id || msg.receiverId === user.id
           );
-          const unreadCount = userMessages.filter(
-            msg => msg.receiver === currentUser.id && !msg.isRead
-          ).length;
           
           return {
-            user,
+            user: user.data,
             lastMessage: userMessages[0]?.content,
-            unreadCount
+            unreadCount: userMessages.filter(
+              msg => msg.receiverId === currentUser.id && !msg.isRead
+            ).length
           };
         });
         
-        setChatList(chatsWithUnread);
+        setChatList(chatList);
       } catch (error) {
         setError('Failed to load chats');
-        console.error('Error:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    if (currentUser) fetchChats();
+    fetchChatData();
   }, [currentUser]);
+  
 
   const filteredChats = chatList.filter(chat => {
     const matchesSearch = chat.user.username.toLowerCase().includes(searchQuery.toLowerCase());

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import API from './api'; // Added import
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Inbox from './components/Inbox';
@@ -26,46 +27,23 @@ function App() {
 
 // Updated PrivateRoute component
 const PrivateRoute = ({ children }) => {
-  const { currentUser, loading } = useAuth(); // Added loading state
+  const { currentUser, loading } = useAuth();
   const location = useLocation();
-  const [authVerified, setAuthVerified] = useState(false);
 
   useEffect(() => {
-    if (!currentUser?.token) {
-      setAuthVerified(false);
-      return;
-    }
-
-    const verifyAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/verify', {
-          headers: {
-            'Authorization': `Bearer ${currentUser.token}`
-          }
+    if (!loading && !currentUser) {
+      API.get('/auth/verify') // Now using the imported API
+        .catch(() => {
+          localStorage.removeItem('token');
         });
-        
-        if (!response.ok) throw new Error('Verification failed');
-        
-        const data = await response.json();
-        setAuthVerified(data.authenticated);
-      } catch (error) {
-        console.error('Token verification failed:', error);
-        setAuthVerified(false);
-      }
-    };
-
-    verifyAuth();
-  }, [currentUser]);
+    }
+  }, [loading, currentUser]);
 
   if (loading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return <div>Loading...</div>;
   }
 
-  if (!authVerified) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return children;
+  return currentUser ? children : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
 export default App;

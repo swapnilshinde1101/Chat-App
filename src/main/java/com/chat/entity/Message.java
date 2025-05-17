@@ -35,6 +35,9 @@ public class Message {
     @JoinColumn(name = "receiver_id", nullable = false)
     @JsonIgnoreProperties({"messagesSent", "messagesReceived", "password"})
     private User receiver;
+    
+    
+    
 
     @PrePersist
     protected void onCreate() {

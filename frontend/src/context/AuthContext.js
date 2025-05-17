@@ -8,13 +8,15 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const verifyToken = async (token) => {
+  const verifyToken = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
     try {
-      const response = await API.get('/auth/verify', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await API.get('/auth/verify');
       return response.data.authenticated;
     } catch (error) {
+      localStorage.removeItem('token');
       return false;
     }
   };
@@ -25,7 +27,7 @@ export function AuthProvider({ children }) {
       const userData = localStorage.getItem('user');
       
       if (token && userData) {
-        const isValid = await verifyToken(token);
+        const isValid = await verifyToken();
         if (isValid) {
           setCurrentUser(JSON.parse(userData));
         } else {
@@ -41,16 +43,13 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     try {
       const response = await auth.login(username, password);
-      if (response?.token && response?.user) {
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        setCurrentUser(response.user);
-        return response;
-      }
-      throw new Error('Invalid response format');
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      setCurrentUser(response.user);
+      return response;
     } catch (error) {
       logout();
-      throw error;
+      throw new Error(error.message || 'Login failed');
     }
   };
 

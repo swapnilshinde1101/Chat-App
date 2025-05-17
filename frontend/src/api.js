@@ -1,9 +1,8 @@
 import axios from 'axios';
 
 
-// Create axios instance
 const API = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: '/api', // Remove explicit port
   headers: {
     'Content-Type': 'application/json'
   }
@@ -66,20 +65,36 @@ const users = {
   searchUsers: (query) => API.get('/users/search', { params: { query } })
 };
 
-// Messages API methods
 const messages = {
+  // Message sending
   sendMessage: (receiverId, content) => 
     API.post('/messages', { receiverId, content }),
-  
+
+  // Get conversation between two users
   getConversation: (otherUserId) => 
-    API.get(`/messages/conversation/${otherUserId}`),
-  
+    API.get('/messages/between', { params: { otherUserId } }),
+
+  // Get all unread messages for current user
   getUnreadMessages: () => API.get('/messages/unread'),
-  
-  markAsRead: (messageId) => 
-    API.put(`/messages/${messageId}/read`),
-  
-  getAllConversations: () => API.get('/messages/conversations')
+
+  // Get all messages for current user (for inbox view)
+  getAllMessages: () => API.get('/messages/all'),
+
+  // Mark single message as read
+  markAsRead: (messageId) => API.put(`/messages/${messageId}/read`),
+
+  // Mark entire conversation as read
+  markConversationAsRead: (senderId) => 
+    API.put('/messages/mark-read', { senderId }),
+
+    getConversations: (userId) => API.get(`/messages/conversations`),
+
+  markConversationAsRead: (receiverId, senderId) => 
+    API.put(`/messages/mark-read?senderId=${senderId}`),
+
+  getLastMessage: (userId1, userId2) => 
+    API.get(`/messages/last?user1=${userId1}&user2=${userId2}`)
+
 };
 
 // Chats API methods

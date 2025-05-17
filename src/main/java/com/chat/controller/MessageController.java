@@ -1,5 +1,6 @@
 package com.chat.controller;
 
+import com.chat.dto.ConversationSummaryDTO;
 import com.chat.dto.MessageDTO;
 import com.chat.entity.User;
 
@@ -140,5 +141,23 @@ public class MessageController {
         }
         public boolean isSuccess() { return success; }
         public String  getMessage() { return message; }
+    }
+    
+    @GetMapping("/conversations")
+    public ResponseEntity<List<ConversationSummaryDTO>> getUserConversations(
+        @AuthenticationPrincipal UserDetails userDetails) {
+        
+        Long userId = userService.findByEmail(userDetails.getUsername()).getId();
+        return ResponseEntity.ok(messageService.getUserConversations(userId));
+    }
+
+    @PutMapping("/mark-read")
+    public ResponseEntity<Void> markConversationAsRead(
+        @RequestParam Long senderId,
+        @AuthenticationPrincipal UserDetails userDetails) {
+        
+        Long receiverId = userService.findByEmail(userDetails.getUsername()).getId();
+        messageService.markConversationAsRead(receiverId, senderId);
+        return ResponseEntity.ok().build();
     }
 }
