@@ -15,4 +15,8 @@ public interface MessageService {
     void markAsRead(Long messageId);
 
     List<Message> getAllMessagesFor(Long userId);
+    void softDelete(Long messageId);
+    
+    
+    
 }

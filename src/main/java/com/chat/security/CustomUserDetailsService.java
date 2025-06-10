@@ -4,6 +4,7 @@ import com.chat.entity.User;
 import com.chat.repository.UserRepository;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.List;
 
@@ -22,6 +23,10 @@ public class CustomUserDetailsService implements UserDetailsService {
         if (user == null) {
             throw new UsernameNotFoundException("User not found with username: " + username);
         }
+        if (!user.isEnabled()) {
+            throw new DisabledException("User account is disabled");
+        }
+
         return new org.springframework.security.core.userdetails.User(
             user.getUsername(),
             user.getPassword(),

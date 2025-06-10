@@ -1,8 +1,6 @@
 package com.chat.controller;
 
 import com.chat.dto.MessageDTO;
-import com.chat.entity.User;
-
 import com.chat.entity.Message;
 import com.chat.entity.User;
 import com.chat.service.MessageService;
@@ -26,14 +24,14 @@ import java.util.stream.Collectors;
 public class MessageController {
 
     private final MessageService messageService;
-    private final UserService    userService;
+    private final UserService userService;
 
-    public MessageController(MessageService messageService,
-                             UserService userService) {
+    public MessageController(MessageService messageService, UserService userService) {
         this.messageService = messageService;
-        this.userService    = userService;
+        this.userService = userService;
     }
 
+    // Inner class to handle request payload for sending a message
     public static class SendMessageRequest {
         @NotBlank(message = "Content must not be blank")
         public String content;
@@ -42,13 +40,15 @@ public class MessageController {
         public Long receiverId;
     }
 
+    // Endpoint to send a new message
     @PostMapping
     public ResponseEntity<MessageDTO> sendMessage(
             @Valid @RequestBody SendMessageRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        // Look up full User entities
-        User sender   = userService.findByEmail(userDetails.getUsername());
+
+        User sender = userService.findByEmail(userDetails.getUsername());
         User receiver = userService.getUserById(request.receiverId);
+
         if (receiver == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -63,6 +63,7 @@ public class MessageController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(saved));
     }
 
+    // Fetch messages exchanged between current user and another user
     @GetMapping("/between")
     public ResponseEntity<List<MessageDTO>> getMessagesBetweenUsers(
             @RequestParam Long otherUserId,
@@ -70,28 +71,30 @@ public class MessageController {
 
         Long currentUserId = userService.findByEmail(userDetails.getUsername()).getId();
         List<MessageDTO> dtos = messageService
-            .getMessagesBetweenUsers(currentUserId, otherUserId)
-            .stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+                .getMessagesBetweenUsers(currentUserId, otherUserId)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
     }
 
+    // Get unread messages only for current user
     @GetMapping("/unread")
     public ResponseEntity<List<MessageDTO>> getUnreadForUser(
             @AuthenticationPrincipal UserDetails userDetails) {
 
         Long currentUserId = userService.findByEmail(userDetails.getUsername()).getId();
         List<MessageDTO> dtos = messageService
-            .getUnreadMessagesFor(currentUserId)
-            .stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+                .getUnreadMessagesFor(currentUserId)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
     }
 
+    // Mark a message as read manually
     @PutMapping("/{id}/read")
     public ResponseEntity<?> markAsRead(@PathVariable Long id) {
         try {
@@ -103,20 +106,22 @@ public class MessageController {
         }
     }
 
+    // Get all messages received by the current user
     @GetMapping("/all")
     public ResponseEntity<List<MessageDTO>> getAllForUser(
             @AuthenticationPrincipal UserDetails userDetails) {
 
         Long currentUserId = userService.findByEmail(userDetails.getUsername()).getId();
         List<MessageDTO> dtos = messageService
-            .getAllMessagesFor(currentUserId)
-            .stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+                .getAllMessagesFor(currentUserId)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
     }
 
+    // Helper method to convert Message -> DTO
     private MessageDTO toDTO(Message m) {
         return MessageDTO.builder()
                 .id(m.getId())
@@ -130,15 +135,34 @@ public class MessageController {
                 .build();
     }
 
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> softDeleteMessage(@PathVariable Long id) {
+        try {
+            messageService.softDelete(id);
+            return ResponseEntity.ok(new ApiResponse(true, "Message deleted"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(false, "Message not found"));
+        }
+    }
+
+    // Simple response object for success/failure messages
     static class ApiResponse {
         private final boolean success;
-        private final String  message;
+        private final String message;
 
-        public ApiResponse(boolean success, String message){
+        public ApiResponse(boolean success, String message) {
             this.success = success;
             this.message = message;
         }
-        public boolean isSuccess() { return success; }
-        public String  getMessage() { return message; }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getMessage() {
+            return message;
+        }
     }
 }

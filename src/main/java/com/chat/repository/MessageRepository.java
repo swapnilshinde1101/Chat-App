@@ -12,14 +12,18 @@ import java.util.List;
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
+    // Only fetch messages exchanged between users that are not soft-deleted
     @Query("SELECT m FROM Message m WHERE " +
-           "(m.sender.id = :senderId AND m.receiver.id = :receiverId) OR " +
-           "(m.sender.id = :receiverId AND m.receiver.id = :senderId) " +
+           "((m.sender.id = :senderId AND m.receiver.id = :receiverId) OR " +
+           "(m.sender.id = :receiverId AND m.receiver.id = :senderId)) " +
+           "AND m.isDeleted = false " +
            "ORDER BY m.timestamp ASC")
     List<Message> findMessagesBetweenUsers(@Param("senderId") Long senderId, 
                                            @Param("receiverId") Long receiverId);
 
-    List<Message> findByReceiverIdAndIsReadFalseOrderByTimestampDesc(Long receiverId);
+    // Unread + not deleted
+    List<Message> findByReceiverIdAndIsReadFalseAndIsDeletedFalseOrderByTimestampDesc(Long receiverId);
 
-    List<Message> findByReceiverIdOrderByTimestampDesc(Long receiverId);
+    // All messages received (not deleted)
+    List<Message> findByReceiverIdAndIsDeletedFalseOrderByTimestampDesc(Long receiverId);
 }

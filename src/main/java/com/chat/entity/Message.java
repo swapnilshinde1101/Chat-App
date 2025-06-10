@@ -36,6 +36,9 @@ public class Message {
     @JsonIgnoreProperties({"messagesSent", "messagesReceived", "password"})
     private User receiver;
 
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
     @PrePersist
     protected void onCreate() {
         if (timestamp == null) {

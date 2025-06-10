@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import { FiMessageSquare, FiLogOut, FiSearch, FiUser } from 'react-icons/fi';
 
 function ChatPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [viewMode, setViewMode] = useState('unread'); // 'unread' or 'all'
+  const [viewMode, setViewMode] = useState('unread');
   const [searchQuery, setSearchQuery] = useState('');
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
@@ -24,21 +25,22 @@ function ChatPage() {
         navigate('/login');
       }
     };
-
+  
+    const fetchConversations = async () => {
+      try {
+        const res = await axios.get('http://localhost:8080/api/conversations', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setConversations(res.data);
+      } catch (err) {
+        console.error('Failed to load conversations:', err);
+      }
+    };
+  
     fetchProfile();
     fetchConversations();
   }, [token, navigate]);
-
-  const fetchConversations = async () => {
-    try {
-      const res = await axios.get('http://localhost:8080/api/conversations', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setConversations(res.data);
-    } catch (err) {
-      console.error('Failed to load conversations:', err);
-    }
-  };
+  
 
   const fetchMessages = async (userId) => {
     try {
@@ -58,15 +60,13 @@ function ChatPage() {
 
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = conv.username.toLowerCase().includes(searchQuery.toLowerCase());
-    if (viewMode === 'unread') {
-      return matchesSearch && conv.unreadCount > 0;
-    }
-    return matchesSearch;
+    return viewMode === 'unread'
+      ? matchesSearch && conv.unreadCount > 0
+      : matchesSearch;
   });
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50">
-      {/* Sidebar */}
       <div className="w-full md:w-80 lg:w-96 border-r bg-white flex flex-col shadow-lg">
         <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-cyan-500">
           <div className="flex items-center justify-between mb-4 text-white">
@@ -76,7 +76,7 @@ function ChatPage() {
             </div>
             <Link 
               to="/login" 
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              className="p-2 hover:bg-white/10 rounded-full"
               title="Logout"
             >
               <FiLogOut className="w-5 h-5" />
@@ -86,7 +86,7 @@ function ChatPage() {
           <div className="flex space-x-2 mb-4">
             <button
               onClick={() => setViewMode('unread')}
-              className={`flex-1 p-2 rounded-lg transition-colors ${
+              className={`flex-1 p-2 rounded-lg ${
                 viewMode === 'unread' 
                   ? 'bg-white/20 text-white' 
                   : 'bg-white/10 hover:bg-white/20 text-white/80'
@@ -96,7 +96,7 @@ function ChatPage() {
             </button>
             <button
               onClick={() => setViewMode('all')}
-              className={`flex-1 p-2 rounded-lg transition-colors ${
+              className={`flex-1 p-2 rounded-lg ${
                 viewMode === 'all' 
                   ? 'bg-white/20 text-white' 
                   : 'bg-white/10 hover:bg-white/20 text-white/80'
@@ -111,7 +111,7 @@ function ChatPage() {
             <input
               type="text"
               placeholder="Search conversations..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white/20 border-none rounded-lg text-white placeholder-white/60 focus:ring-2 focus:ring-white/30"
+              className="w-full pl-10 pr-4 py-2.5 bg-white/20 rounded-lg text-white placeholder-white/60 focus:ring-2 focus:ring-white/30"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -123,7 +123,7 @@ function ChatPage() {
             <div
               key={conv.userId}
               onClick={() => handleConversationSelect(conv.userId)}
-              className={`p-4 border-b cursor-pointer transition-colors ${
+              className={`p-4 border-b cursor-pointer ${
                 selectedConversation === conv.userId 
                   ? 'bg-blue-50/50' 
                   : 'hover:bg-gray-50'
@@ -150,7 +150,6 @@ function ChatPage() {
         </div>
       </div>
 
-      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-white">
         {selectedConversation ? (
           <>
@@ -196,4 +195,5 @@ function ChatPage() {
     </div>
   );
 }
+
 export default ChatPage;

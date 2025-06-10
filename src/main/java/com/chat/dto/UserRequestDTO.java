@@ -11,7 +11,7 @@ public class UserRequestDTO {
     private String username; // add username
 
     @NotBlank
-    private String name;     // if you want to keep 'name' separately, else remove it
+    private String name;     
 
     @Email @NotBlank
     private String email;

@@ -20,7 +20,6 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public Message saveMessage(Message message) {
-        // Optional: validate sender/receiver exist here or in controller or via UserService
         return messageRepository.save(message);
     }
 
@@ -31,7 +30,8 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public List<Message> getUnreadMessagesFor(Long userId) {
-        return messageRepository.findByReceiverIdAndIsReadFalseOrderByTimestampDesc(userId);
+        // Updated to use soft-deletion-safe method
+        return messageRepository.findByReceiverIdAndIsReadFalseAndIsDeletedFalseOrderByTimestampDesc(userId);
     }
 
     @Override
@@ -45,6 +45,16 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public List<Message> getAllMessagesFor(Long userId) {
-        return messageRepository.findByReceiverIdOrderByTimestampDesc(userId);
+        // Updated to exclude soft-deleted messages
+        return messageRepository.findByReceiverIdAndIsDeletedFalseOrderByTimestampDesc(userId);
+    }
+
+    @Override
+    @Transactional
+    public void softDelete(Long messageId) {
+        Message message = messageRepository.findById(messageId)
+            .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        message.setDeleted(true);
+        messageRepository.save(message);
     }
 }
